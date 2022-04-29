@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text># Pcells for EE312 Test Structures
+# Connor Cremers, 2022
+
+import pya
+from transistor import transistor
+from vernier import vernier
+from four_point_probe import four_point_probe
+from cbkr import cbkr
+from ono_contact import ono_contact
+from contact_chain import contact_chain
+from tlm import tlm
+from six_p_tlm import six_p_tlm
+from vdp import vdp
+from diode import diode
+from min_feature_optic import min_feature_optic
+from min_feature_electrical import min_feature_electrical
+from min_feature_optic_step import min_feature_optic_step
+
+class EE312(pya.Library):
+
+  def __init__(self):
+  
+    # Set the description
+    self.description = "Test Structures for EE312"
+    
+    # Create the PCell declarations
+    self.layout().register_pcell("transistor", transistor())
+    self.layout().register_pcell("vernier", vernier())
+    self.layout().register_pcell("four_point_probe", four_point_probe())
+    self.layout().register_pcell("cbkr", cbkr())
+    self.layout().register_pcell("ono_contact", ono_contact())
+    self.layout().register_pcell("contact_chain", contact_chain())
+    self.layout().register_pcell("tlm", tlm())
+    self.layout().register_pcell("six_p_tlm", six_p_tlm())
+    self.layout().register_pcell("vdp", vdp())
+    self.layout().register_pcell("diode", diode())
+    self.layout().register_pcell("min_feature_optic", min_feature_optic())
+    self.layout().register_pcell("min_feature_optic_step", min_feature_optic_step())
+    self.layout().register_pcell("min_feature_electrical", min_feature_electrical())
+
+    # If a library with that name already existed, it will be replaced then.
+    self.register("EE312")
+
+
+# Instantiate and register the library
+EE312()
+</text>
+</klayout-macro>
