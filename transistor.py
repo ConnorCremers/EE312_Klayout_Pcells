@@ -5,6 +5,7 @@ A good ol fashioned transistor.
 import pya
 import math
 
+import text
 import helpers
 
 class transistor(pya.PCellDeclarationHelper):
@@ -27,6 +28,10 @@ class transistor(pya.PCellDeclarationHelper):
 
     self.param("pad_dx", self.TypeDouble, "Pad X Spacing", default = 150)
     self.param("pad_dy", self.TypeDouble, "Pad Y Spacing", default = 100)
+
+    self.param("disp_L", self.TypeBoolean, "Display L?", default=True)
+    self.param("disp_W", self.TypeBoolean, "Display W?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
 
 
   def display_text_impl(self):
@@ -111,3 +116,29 @@ class transistor(pya.PCellDeclarationHelper):
     self.cell.shapes(self.p_metal_layer).insert(pya.Box(
         - pad_dx / 2, p_well_y + offset / 2, - pad_dx / 2 - offset, - pad_dy / 2))
 
+    # Display text with relevant parameters
+    # Either show length, width, or both
+    disp_str = ''
+    if self.disp_L and self.disp_W:
+        disp_str = f'L={self.L:g} W={self.W:g}'
+    elif self.disp_L:
+        disp_str = f'L={self.L:g}'
+    elif self.disp_W:
+        disp_str = f'W={self.W:g}'
+    
+    if disp_str:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(disp_str, self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = - text_len / 2
+        text_y = pad_h + pad_dy / 2
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)
