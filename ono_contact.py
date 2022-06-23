@@ -80,7 +80,7 @@ class ono_contact(pya.PCellDeclarationHelper):
         - metal_w / 2, metal_w / 2,
         metal_w / 2, pad_dy / 2))
     for x_mir in [-1, 1]:
-        self.cell.shapes(self.metal_layer).insert(pya.Box(
+        self.cell.shapes(self.contact_layer).insert(pya.Box(
             *helpers.center_size_to_points(
                 x_mir * big_contact_x, 0, mcl, mcw)))
         self.cell.shapes(self.metal_layer).insert(pya.Box(
