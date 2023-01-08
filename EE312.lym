@@ -31,6 +31,7 @@ from diode import diode
 from min_feature_optic import min_feature_optic
 from min_feature_electrical import min_feature_electrical
 from min_feature_optic_step import min_feature_optic_step
+from grid_labels import grid_labels
 
 class EE312(pya.Library):
 
@@ -53,6 +54,7 @@ class EE312(pya.Library):
     self.layout().register_pcell("min_feature_optic", min_feature_optic())
     self.layout().register_pcell("min_feature_optic_step", min_feature_optic_step())
     self.layout().register_pcell("min_feature_electrical", min_feature_electrical())
+    self.layout().register_pcell("grid_labels", grid_labels())
 
     # If a library with that name already existed, it will be replaced then.
     self.register("EE312")

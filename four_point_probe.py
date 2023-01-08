@@ -19,8 +19,8 @@ class four_point_probe(pya.PCellDeclarationHelper):
     self.param("contact", self.TypeLayer, "Layer", default = pya.LayerInfo(3, 0))
     self.param("metal", self.TypeLayer, "Layer", default = pya.LayerInfo(4, 0))
 
-    self.param("width", self.TypeDouble, "Structure Width", default=3)
-    self.param("length", self.TypeDouble, "Meas Length", default=200)
+    self.param("W", self.TypeDouble, "Structure Width", default=3)
+    self.param("L", self.TypeDouble, "Meas Length", default=200)
 
     self.param("pad_w", self.TypeDouble, "Pad Width", default = 150)
     self.param("pad_h", self.TypeDouble, "Pad Length", default = 100)
@@ -29,19 +29,23 @@ class four_point_probe(pya.PCellDeclarationHelper):
 
     self.param("alignment", self.TypeDouble, "Alignment Accuracy", default = 1)
     self.param("contact_size", self.TypeDouble, "Contact Size", default = 2)
-    self.param("min_feature", self.TypeDouble, "Min Feature in Resistor Layer", default=1)
+    self.param("min_feature", self.TypeDouble, "Min Feature in Resistor Layer", default=1.5)
+
+    self.param("disp_L", self.TypeBoolean, "Display L?", default=True)
+    self.param("disp_W", self.TypeBoolean, "Display W?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
 
 
   def display_text_impl(self):
-    return f'FPP W={self.width} L={self.length}'
+    return f'FPP W={self.W} L={self.L}'
   
   def coerce_parameters_impl(self):
     pass
 
   def produce_impl(self):
     dbu = self.layout.dbu
-    w = self.width / dbu
-    l = self.length / dbu
+    w = self.W / dbu
+    l = self.L / dbu
     pad_w = self.pad_w / dbu
     pad_h = self.pad_h / dbu
     pad_dx = self.pad_dx / dbu
@@ -96,3 +100,32 @@ class four_point_probe(pya.PCellDeclarationHelper):
           mir * total_l / 2, -contact_box / 2, mir * (total_l / 2 - contact_box), pad_dy / 2))
       self.cell.shapes(self.metal_layer).insert(pya.Box(
           mir * (l - contact_box) / 2, contact_y + contact_box / 2, mir * (l + contact_box) / 2, - pad_dy / 2))
+
+    # Display text with relevant parameters
+    # Either show length, width, or both
+    disp_str = ''
+    extra_y = False
+    if self.disp_L and self.disp_W:
+        disp_str = f'L={self.L:g} W={self.W:g}'
+        extra_y = True
+    elif self.disp_L:
+        disp_str = f'L={self.L:g}'
+    elif self.disp_W:
+        disp_str = f'W={self.W:g}'
+    
+    if disp_str:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(disp_str, self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = - text_len / 2
+        text_y = pad_h + pad_dy / 2 + (contact_box if extra_y else 0) 
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)

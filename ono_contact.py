@@ -36,6 +36,10 @@ class ono_contact(pya.PCellDeclarationHelper):
     self.param("tlm_dl", self.TypeDouble, "TLM Distance", default = 10)
     self.param("meas_w", self.TypeDouble, "Measurement Tap Width", default = 2)
 
+    self.param("disp_DL", self.TypeBoolean, "Display DL?", default=True)
+    self.param("disp_W", self.TypeBoolean, "Display W?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
+
   def display_text_impl(self):
     return f'Ono Contact size={self.meas_contact_w}'
   
@@ -116,3 +120,30 @@ class ono_contact(pya.PCellDeclarationHelper):
             x_mir * (pad_dx + pad_w / 2), - 2.5 * metal_w,
             x_mir * (pad_dx + pad_w / 2 + metal_w), - pad_dy / 2))
 
+    # Display text with relevant parameters
+    # Either show length, width, or both
+    disp_str = ''
+    extra_y = False
+    if self.disp_DL and self.disp_W:
+        disp_str = f'DL={self.tlm_dl:g} W={self.meas_contact_w:g}'
+    elif self.disp_DL:
+        disp_str = f'DL={self.tlm_dl:g}'
+    elif self.disp_W:
+        disp_str = f'W={self.meas_contact_w:g}'
+    
+    if disp_str:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(disp_str, self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = - text_len / 2
+        text_y = pad_h + pad_dy / 2 + metal_w
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)

@@ -119,8 +119,10 @@ class transistor(pya.PCellDeclarationHelper):
     # Display text with relevant parameters
     # Either show length, width, or both
     disp_str = ''
+    extra_y = False
     if self.disp_L and self.disp_W:
         disp_str = f'L={self.L:g} W={self.W:g}'
+        extra_y = True
     elif self.disp_L:
         disp_str = f'L={self.L:g}'
     elif self.disp_W:
@@ -137,7 +139,7 @@ class transistor(pya.PCellDeclarationHelper):
         bbox = text.bbox()
         text_len = (bbox.right - bbox.left)
         text_x = - text_len / 2
-        text_y = pad_h + pad_dy / 2
+        text_y = pad_h + pad_dy / 2 + (offset if extra_y else 0) 
         text.move(text_x, text_y)
 
         # Add region to metal layer

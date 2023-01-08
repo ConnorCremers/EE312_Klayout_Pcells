@@ -19,19 +19,23 @@ class six_p_tlm(pya.PCellDeclarationHelper):
     self.param("contact", self.TypeLayer, "Layer", default = pya.LayerInfo(3, 0))
     self.param("metal", self.TypeLayer, "Layer", default = pya.LayerInfo(4, 0))
 
-    self.param("width", self.TypeDouble, "Structure Width", default=10)
-    self.param("dl", self.TypeDouble, "Contact Spacing", default=100)
+    self.param("width", self.TypeDouble, "Structure Width", default=3)
+    self.param("dl", self.TypeDouble, "Contact Spacing", default=50)
 
     self.param("pad_w", self.TypeDouble, "Pad Width", default = 150)
     self.param("pad_h", self.TypeDouble, "Pad Length", default = 100)
-    self.param("metal_size", self.TypeDouble, "Pad gap and extension width", default=20)
     self.param("pad_dy", self.TypeDouble, "Y pad spacing", default=100)
 
     self.param("contact_size", self.TypeDouble, "Contact Size", default = 2)
 
+    self.param("disp_C", self.TypeBoolean, "Display C?", default=True)
+    self.param("disp_W", self.TypeBoolean, "Display W?", default=True)
+    self.param("disp_dL", self.TypeBoolean, "Display dL?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
+
 
   def display_text_impl(self):
-    return f'tlm dl={self.dl} contact={self.contact_size}'
+    return f'six p tlm dl={self.dl} contact={self.contact_size}'
   
   def coerce_parameters_impl(self):
     pass
@@ -42,29 +46,76 @@ class six_p_tlm(pya.PCellDeclarationHelper):
     dl = self.dl / dbu
     pad_w = self.pad_w / dbu
     pad_h = self.pad_h / dbu
-    ms = self.metal_size / dbu
     pad_dy = self.pad_dy / dbu
     contact_size = self.contact_size / dbu
     
-    top_contacts = [(2 * ii - 2.5) * dl for ii in range(3)]
-    bot_contacts = [(2 * ii - 1.5) * dl for ii in range(3)]
-    for cl in top_contacts:
-      self.cell.shapes(self.contact_layer).insert(pya.Box(
-          *helpers.center_size_to_points(cl, 0, contact_size, contact_size)))
-      self.cell.shapes(self.metal_layer).insert(pya.Box(
-          cl - ms / 2, - w / 2, cl + ms / 2, pad_dy / 2))
-      self.cell.shapes(self.metal_layer).insert(pya.Box(
-          cl - pad_w / 2, pad_dy / 2, cl + pad_w / 2, pad_h + pad_dy / 2))
+    xs = []
+    contact_x = - contact_size
+    metal_w = dl * .8
+    min_gap = .05 * pad_h
 
-    for cl in bot_contacts:
+    for ii in range(6):
+      contact_x += ii * dl + contact_size
       self.cell.shapes(self.contact_layer).insert(pya.Box(
-          *helpers.center_size_to_points(cl, 0, contact_size, contact_size)))
+          *helpers.center_size_to_points(contact_x, 0, contact_size, contact_size)))
+      y_dir = 1 if bool(ii % 2) else -1
       self.cell.shapes(self.metal_layer).insert(pya.Box(
-          cl - ms / 2, w / 2, cl + ms / 2, - pad_dy / 2))
-      self.cell.shapes(self.metal_layer).insert(pya.Box(
-          cl - pad_w / 2, - pad_dy / 2, cl + pad_w / 2, - pad_h - pad_dy / 2))
-
+          contact_x - metal_w / 2, - y_dir * w,
+          contact_x + metal_w / 2, y_dir * pad_dy / 2))
+      xs.append(contact_x)
     # Add in Si channel
-    total_l = 5 * dl + w
     self.cell.shapes(self.resistor_layer).insert(pya.Box(
-        *helpers.center_size_to_points(0, 0, total_l, w)))
+        - w / 2, - w / 2, xs[-1] + w / 2, w / 2))    
+    
+    # Add pads
+    # First define the pads for the middle contacts, which we fix
+    mid_bot_l = xs[2] - metal_w / 2
+    mid_top_l = xs[3] - metal_w / 2
+    mid_bot_r = mid_bot_l + pad_w # Right edge of middle bottom pad
+    mid_top_r = mid_top_l + pad_w # Right edge of middle top pad
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        mid_bot_l, - pad_dy / 2, mid_bot_r, - pad_dy / 2 - pad_h))
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        mid_top_l, pad_dy / 2, mid_top_r, pad_dy / 2 + pad_h))
+    # Set the left two pads as far right as possible without hitting middle pads
+    left_bot_l = min(xs[0] - metal_w / 2, mid_bot_l - pad_w - min_gap)
+    left_top_l = min(xs[1] - metal_w / 2, mid_top_l - pad_w - min_gap)
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        left_bot_l, - pad_dy / 2, left_bot_l + pad_w, - pad_dy / 2 - pad_h))
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        left_top_l, pad_dy / 2, left_top_l + pad_w, pad_dy / 2 + pad_h))
+    # Set the right two pads as far left as possible without hitting middle pads
+    right_bot_r = max(xs[4] + metal_w / 2, mid_bot_r + pad_w + min_gap)
+    right_top_r = max(xs[5] + metal_w / 2, mid_top_r + pad_w + min_gap)
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        right_bot_r - pad_w, - pad_dy / 2, right_bot_r, - pad_dy / 2 - pad_h))
+    self.cell.shapes(self.metal_layer).insert(pya.Box(
+        right_top_r - pad_w, pad_dy / 2, right_top_r, pad_dy / 2 + pad_h))
+
+    # Display text with relevant parameters
+    # Show some subset of dL, W, and C
+    disp_str = ''
+    if self.disp_dL:
+        disp_str += f'dL={self.dl:g} '
+    if self.disp_W:
+        disp_str += f'W={self.width:g} '
+    if self.disp_C:
+        disp_str += f'C={self.contact_size:g} '
+    
+    if disp_str:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(disp_str[:-1], self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = (xs[-1] - text_len) / 2
+        text_y = pad_h + pad_dy / 2 + min_gap
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)
+

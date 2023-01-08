@@ -31,6 +31,9 @@ class min_feature_electrical(pya.PCellDeclarationHelper):
 
     self.param("cont", self.TypeBoolean, "Continuity expected?", default=True)
 
+    self.param("disp_fs", self.TypeBoolean, "Display Size?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
+
   def display_text_impl(self):
     return f'Min Feature Electrical width={self.feature_width}'
   
@@ -133,3 +136,23 @@ class min_feature_electrical(pya.PCellDeclarationHelper):
             *helpers.center_size_to_points(0, - pad_y, pad_w, pad_h)))
         self.cell.shapes(self.metal_layer).insert(pya.Box(
             *helpers.center_size_to_points(0, pad_y, pad_w, pad_h)))
+
+    # Display text with relevant parameters    
+    if self.disp_fs:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(f'S={self.feature_width:g}', self.layout.dbu, self.text_h / .7)
+        text = text.transformed(pya.ICplxTrans.R270)
+        
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.top - bbox.bottom)
+        text_y = text_len / 2 - pad_dy / 2 - pad_h / 2
+        text_x = pad_w / 2 + fs
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)    

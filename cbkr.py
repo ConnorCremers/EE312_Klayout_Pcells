@@ -27,6 +27,9 @@ class cbkr(pya.PCellDeclarationHelper):
     self.param("alignment", self.TypeDouble, "Alignment Accuracy", default = 1)
     self.param("contact_size", self.TypeDouble, "Contact Size", default = 2)
 
+    self.param("disp_c", self.TypeBoolean, "Display Size?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
+
 
   def display_text_impl(self):
     return f'CKBR size={self.contact_size}'
@@ -85,3 +88,20 @@ class cbkr(pya.PCellDeclarationHelper):
     self.cell.shapes(self.metal_layer).insert(pya.Box(
         pad_dx / 2, arm_w / 2, pad_dx / 2 + arm_w, pad_dy / 2))
     
+    # Display text with relevant parameters    
+    if self.disp_c:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(f'C={self.contact_size:g}', self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = - text_len / 2
+        text_y = pad_h + pad_dy / 2
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)

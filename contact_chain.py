@@ -29,6 +29,9 @@ class contact_chain(pya.PCellDeclarationHelper):
     self.param("bar_len", self.TypeDouble, "Conductor Length", default = 10)
     self.num = 0
 
+    self.param("disp_c", self.TypeBoolean, "Display Size?", default=True)
+    self.param("text_h", self.TypeDouble, "Text Height", default = 20)
+
 
   def display_text_impl(self):
     return f'contact chain size={self.contact_size} num={self.num}'
@@ -88,3 +91,21 @@ class contact_chain(pya.PCellDeclarationHelper):
         layer = not layer
     self.cell.shapes(self.metal_layer).insert(pya.Box(
         x - bw / 2, y - bw / 2, pad_dx / 2, y + bw / 2))
+
+    # Display text with relevant parameters    
+    if self.disp_c:
+        # Generate klayout region containing text
+        # This can only generate with lower left at (0, 0)
+        text_generator = pya.TextGenerator.default_generator()
+        # default height is .7; third argument rescales to desired size
+        text = text_generator.text(f'C={self.contact_size:g}', self.layout.dbu, self.text_h / .7)
+
+        # Adjust position of region
+        bbox = text.bbox()
+        text_len = (bbox.right - bbox.left)
+        text_x = - text_len / 2
+        text_y = pad_h / 2 + bw
+        text.move(text_x, text_y)
+
+        # Add region to metal layer
+        self.cell.shapes(self.metal_layer).insert (text)
