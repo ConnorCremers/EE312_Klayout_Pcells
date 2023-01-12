@@ -5,7 +5,6 @@ A good ol fashioned transistor.
 import pya
 import math
 
-import text
 import helpers
 
 class grid_labels(pya.PCellDeclarationHelper):
